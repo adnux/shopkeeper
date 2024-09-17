@@ -1,0 +1,19 @@
+{
+  "name": "shopkeeper",
+  "version": "1.0.0",
+  "description": "Technical Challenge - ShopKeeper",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file=.env ./src/server.js",
+    "test": "test"
+  },
+  "author": "Andre Ferreira",
+  "license": "MIT",
+  "dependencies": {
+    "chart.js": "^4.4.4",
+    "express": "^4.21.0",
+    "express-handlebars": "^8.0.1",
+    "handlebars": "^4.7.8",
+    "pg": "^8.12.0"
+  }
+}
