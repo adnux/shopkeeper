@@ -41,7 +41,7 @@ const hbs = create({
 // Set up Handlebars as the template engine
 app.engine('.hbs', hbs.engine);
 app.set('view engine', '.hbs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '../views'));
 
 // Static files middleware (for Chart.js)
 app.use(express.static(path.join(__dirname, 'public')));

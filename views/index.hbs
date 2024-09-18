@@ -146,7 +146,6 @@
     const showAverage = queryParams?.chartYValue === 'avg_revenue';
     // Chart data from server
     const data = {{{graphDataJson}}};
-    console.log('data =====> ', data);
     const labels = [...new Set(data.map(item => `${item.month}/${item.year}`))];
     
     const brokers = [...new Set(data.map(item => item.broker))];
