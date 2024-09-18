@@ -116,7 +116,7 @@ const buildTableSortClause = (queryParams) => {
 };
 
 const createTableListingSQL = (sqlString, queryParams) => {
-  if(process.env.LOG == true) {
+  if(process.env.LOG === 'true') {
     console.log('queryParams =====> ', queryParams);
   }
 
@@ -126,7 +126,7 @@ const createTableListingSQL = (sqlString, queryParams) => {
     .replace('{{AND_CLAUSE}}', buildTableWhereClause(queryParams))
     .replace('{{SORT_CLAUSE}}', buildTableSortClause(queryParams));
 
-    if(process.env.LOG == true) {
+    if(process.env.LOG === 'true') {
       console.log('createTableListingSQL newSQL =====> ', newSQL);
     }
 
@@ -139,7 +139,7 @@ const createGraphListingSQL = (sqlString, queryParams) => {
 
   newSQL = sqlString.replace('{{AND_CLAUSE}}', buildGraphWhereClause(queryParams));
 
-  if(process.env.LOG == true) {
+  if(process.env.LOG === 'true') {
     console.log('createGraphListingSQL newSQL =====> ', newSQL);
   }
 
@@ -153,19 +153,27 @@ app.get('/', async (req, res) => {
     const listingsPerMonthAvgRevenue = fs.readFileSync('src/sql/listings_per_month_avg_revenue.sql').toString();
     const graphSql = createGraphListingSQL(listingsPerMonthAvgRevenue, req.query);
     const graphDataResult = await pool.query(graphSql);
-    if(process.env.LOG == true) {
-      console.log('graphDataResult =====> ', graphDataResult?.rows?.slice(0, 1));
+    if(process.env.LOG === 'true') {
+      console.log('graphDataResult =====> ', graphDataResult?.rows?.slice(0, 3));
     }
 
     // Query for the data table
     const listingsPerMonth = fs.readFileSync('src/sql/listings_per_month.sql').toString();
     const listingsSql = createTableListingSQL(listingsPerMonth, req.query);
     const tableDataResult = await pool.query(listingsSql);
-    if(process.env.LOG == true) {
+    if(process.env.LOG === 'true') {
       console.log('tableDataResult =====> ', tableDataResult?.rows?.slice(0, 1));
     }
 
-    res.render('index', { graphData: JSON.stringify(graphDataResult.rows), tableData: tableDataResult.rows });
+    res.render(
+      'index',
+      {
+        graphDataJson: JSON.stringify(graphDataResult.rows),
+        graphData: graphDataResult.rows,
+        tableData: tableDataResult.rows,
+        queryParams: JSON.stringify(req.query),
+      }
+    );
   } catch (err) {
     console.error(err);
     res.status(500).send('Error fetching data');

@@ -12,6 +12,7 @@
   <div>
     <label for="columnFilter">Filter by column:</label>
     <select id="columnFilter" name="columnFilter">
+      <option value="">Select one</option>
       <option value="listing_id">Id</option>
       <option value="listing_year">Year</option>
       <option value="listing_month">Month</option>
@@ -27,6 +28,7 @@
   <div>
     <label for="columnSorter">Sort by column:</label>
     <select id="columnSorter" name="columnSorter">
+      <option value="">Select one</option>
       <option value="listing_id">Id</option>
       <option value="listing_date">Date</option>
       <option value="broker">Broker</option>
@@ -35,33 +37,70 @@
     <button type="button" onclick="sortTable()">Sort</button>
     <button type="button" onclick="clearSort()">Clear Sort</button>
   </div>
+  <div>
+    <label for="chartYValue">Select data to show on chart</label>
+    <select id="chartYValue" name="chartYValue" onchange="changeChartYValue()" >
+      <option value="">Select one</option>
+      <option value="listing_count">Number of Listings</option>
+      <option value="avg_revenue">Average Revenue</option>
+    </select>
+  </div>
 
-  <canvas id="myChart" width="400" height="200"></canvas>
+  <canvas id="countChart" width="400" height="200"></canvas>
 
-  <table border="1">
-    <thead>
-      <tr>
-        <th>Id</th>
-        <th>Year</th>
-        <th>Month</th>
-        <th>Date</th>
-        <th>Broker</th>
-        <th>Revenue</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each tableData}}
-      <tr>
-        <td>{{listing_id}}</td>
-        <td>{{listing_year}}</td>
-        <td>{{listing_month}}</td>
-        <td>{{format_date listing_date}}</td>
-        <td>{{link broker broker_url}}</td>
-        <td>{{money revenue}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
+  <div style="display: flex; justify-content: space-between;">
+    <div style="flex: 1; margin-right: 10px;">
+      <strong>Count & Average per period: {{graphData.length}} records</strong>
+      <table border="1" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Broker</th>
+            <th>Count</th>
+            <th>Average</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each graphData}}
+            <tr>
+              <td>{{listings_year_month}}</td>
+              <td>{{broker}}</td>
+              <td>{{listing_count}}</td>
+              <td>{{money avg_revenue}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="flex: 1; margin-left: 10px;">
+      <strong>Listings in the period: {{tableData.length}} records</strong>
+      <table border="1" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Year</th>
+            <th>Month</th>
+            <th>Date</th>
+            <th>Broker</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each tableData}}
+          <tr>
+            <td>{{listing_id}}</td>
+            <td>{{listing_year}}</td>
+            <td>{{listing_month}}</td>
+            <td>{{format_date listing_date}}</td>
+            <td>{{broker}} {{link 'link' broker_url}}</td>
+            <td>{{money revenue}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <script>
     function filterTable() {
@@ -93,11 +132,20 @@
       url.searchParams.delete('sort');
       window.location.href = url.toString();
     }
+    function changeChartYValue() {
+      const chartYValue = document.getElementById('chartYValue').value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('chartYValue', chartYValue);
+      window.location.href = url.toString();
+    }
   </script>
   <script>
-    const ctx = document.getElementById('myChart').getContext('2d');
-
-    const data = {{{graphData}}}; // Embedding the data for use in Chart.js
+    const countChartCtx = document.getElementById('countChart').getContext('2d');
+    // Query params from server
+    const queryParams = {{{queryParams}}};
+    const showAverage = queryParams?.chartYValue === 'avg_revenue';
+    // Chart data from server
+    const data = {{{graphDataJson}}};
     const labels = [...new Set(data.map(item => `${item.month}/${item.year}`))];
     
     const brokers = [...new Set(data.map(item => item.broker))];
@@ -107,7 +155,8 @@
         data: labels.map(label => {
           const [month, year] = label.split('/');
           const record = data.find(item => item.broker === broker && item.month == month && item.year == year);
-          return record ? record.listing_count : 0;
+          const listing = showAverage ? record?.avg_revenue : record?.listing_count
+          return listing ?? 0;
         }),
         fill: false,
         borderColor: getRandomColor(),
@@ -123,13 +172,25 @@
       return color;
     }
 
-    new Chart(ctx, {
+    new Chart(countChartCtx, {
       type: 'line',
       data: {
         labels: labels,
         datasets: datasets
       },
       options: {
+        transitions: {
+          show: {
+            animations: {
+              x: {
+                from: 0
+              },
+              y: {
+                from: 0
+              }
+            }
+          }
+        },
         responsive: true,
         scales: {
           x: {
@@ -141,7 +202,7 @@
           y: {
             title: {
               display: true,
-              text: 'Number of Listings'
+              text: showAverage ? 'Average Revenue' : 'Listings Count',
             }
           }
         }
