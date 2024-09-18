@@ -41,7 +41,7 @@ const hbs = create({
 // Set up Handlebars as the template engine
 app.engine('.hbs', hbs.engine);
 app.set('view engine', '.hbs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '../views'));
 
 // Static files middleware (for Chart.js)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -153,6 +153,7 @@ app.get('/', async (req, res) => {
     const listingsPerMonthAvgRevenue = fs.readFileSync('src/sql/listings_per_month_avg_revenue.sql').toString();
     const graphSql = createGraphListingSQL(listingsPerMonthAvgRevenue, req.query);
     const graphDataResult = await pool.query(graphSql);
+
     if(process.env.LOG === 'true') {
       console.log('graphDataResult =====> ', graphDataResult?.rows?.slice(0, 3));
     }
@@ -161,6 +162,7 @@ app.get('/', async (req, res) => {
     const listingsPerMonth = fs.readFileSync('src/sql/listings_per_month.sql').toString();
     const listingsSql = createTableListingSQL(listingsPerMonth, req.query);
     const tableDataResult = await pool.query(listingsSql);
+
     if(process.env.LOG === 'true') {
       console.log('tableDataResult =====> ', tableDataResult?.rows?.slice(0, 1));
     }

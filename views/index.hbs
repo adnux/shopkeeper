@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Listings Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Business Listings Overview</h1>
+
+  <div>
+    <label for="columnFilter">Filter by column:</label>
+    <select id="columnFilter" name="columnFilter">
+      <option value="">Select one</option>
+      <option value="listing_id">Id</option>
+      <option value="listing_year">Year</option>
+      <option value="listing_month">Month</option>
+      {{!-- <option value="listing_date">Date</option> --}}
+      <option value="broker">Broker</option>
+      <option value="revenue">Revenue</option>
+    </select>
+    <label for="filterValue">Filter value:</label>
+    <input type="text" id="filterValue" name="filterValue">
+    <button type="button" onclick="filterTable()">Filter</button>
+    <button type="button" onclick="clearFilters()">Clear Filters</button>
+  </div>
+  <div>
+    <label for="columnSorter">Sort by column:</label>
+    <select id="columnSorter" name="columnSorter">
+      <option value="">Select one</option>
+      <option value="listing_id">Id</option>
+      <option value="listing_date">Date</option>
+      <option value="broker">Broker</option>
+      <option value="revenue">Revenue</option>
+    </select>
+    <button type="button" onclick="sortTable()">Sort</button>
+    <button type="button" onclick="clearSort()">Clear Sort</button>
+  </div>
+  <div>
+    <label for="chartYValue">Select data to show on chart</label>
+    <select id="chartYValue" name="chartYValue" onchange="changeChartYValue()" >
+      <option value="">Select one</option>
+      <option value="listing_count">Number of Listings</option>
+      <option value="avg_revenue">Average Revenue</option>
+    </select>
+  </div>
+
+  <canvas id="countChart" width="400" height="200"></canvas>
+
+  <div style="display: flex; justify-content: space-between;">
+    <div style="flex: 1; margin-right: 10px;">
+      <strong>Count & Average per period: {{graphData.length}} records</strong>
+      <table border="1" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Broker</th>
+            <th>Count</th>
+            <th>Average</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each graphData}}
+            <tr>
+              <td>{{listings_year_month}}</td>
+              <td>{{broker}}</td>
+              <td>{{listing_count}}</td>
+              <td>{{money avg_revenue}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="flex: 1; margin-left: 10px;">
+      <strong>Listings in the period: {{tableData.length}} records</strong>
+      <table border="1" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Year</th>
+            <th>Month</th>
+            <th>Date</th>
+            <th>Broker</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each tableData}}
+          <tr>
+            <td>{{listing_id}}</td>
+            <td>{{listing_year}}</td>
+            <td>{{listing_month}}</td>
+            <td>{{format_date listing_date}}</td>
+            <td>{{broker}} {{link 'link' broker_url}}</td>
+            <td>{{money revenue}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function filterTable() {
+      const columnFilter = document.getElementById('columnFilter').value;
+      const filterValue = document.getElementById('filterValue').value;
+      const url = new URL(window.location.href);
+      const encodedFilterValue = encodeURIComponent(filterValue);
+      url.searchParams.set(columnFilter, encodedFilterValue);
+      window.location.href = url.toString();
+    }
+    function sortTable() {
+      const columnSorter = document.getElementById('columnSorter').value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('sort', columnSorter);
+      window.location.href = url.toString();
+    }
+    function clearFilters() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('listing_id');
+      url.searchParams.delete('listing_year');
+      url.searchParams.delete('listing_month');
+      url.searchParams.delete('listing_date');
+      url.searchParams.delete('broker');
+      url.searchParams.delete('revenue');
+      window.location.href = url.toString();
+    }
+    function clearSort() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('sort');
+      window.location.href = url.toString();
+    }
+    function changeChartYValue() {
+      const chartYValue = document.getElementById('chartYValue').value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('chartYValue', chartYValue);
+      window.location.href = url.toString();
+    }
+  </script>
+  <script>
+    const countChartCtx = document.getElementById('countChart').getContext('2d');
+    // Query params from server
+    const queryParams = {{{queryParams}}};
+    const showAverage = queryParams?.chartYValue === 'avg_revenue';
+    // Chart data from server
+    const data = {{{graphDataJson}}};
+    const labels = [...new Set(data.map(item => `${item.month}/${item.year}`))];
+    
+    const brokers = [...new Set(data.map(item => item.broker))];
+    const datasets = brokers.map(broker => {
+      return {
+        label: broker,
+        data: labels.map(label => {
+          const [month, year] = label.split('/');
+          const record = data.find(item => item.broker === broker && item.month == month && item.year == year);
+          const listing = showAverage ? record?.avg_revenue : record?.listing_count
+          return listing ?? 0;
+        }),
+        fill: false,
+        borderColor: getRandomColor(),
+      };
+    });
+    console.log('datasets =====> ', datasets);
+
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    new Chart(countChartCtx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: datasets
+      },
+      options: {
+        transitions: {
+          show: {
+            animations: {
+              x: {
+                from: 0
+              },
+              y: {
+                from: 0
+              }
+            }
+          }
+        },
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Month'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: showAverage ? 'Average Revenue' : 'Listings Count',
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
