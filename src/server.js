@@ -153,6 +153,7 @@ app.get('/', async (req, res) => {
     const listingsPerMonthAvgRevenue = fs.readFileSync('src/sql/listings_per_month_avg_revenue.sql').toString();
     const graphSql = createGraphListingSQL(listingsPerMonthAvgRevenue, req.query);
     const graphDataResult = await pool.query(graphSql);
+
     if(process.env.LOG === 'true') {
       console.log('graphDataResult =====> ', graphDataResult?.rows?.slice(0, 3));
     }
@@ -161,6 +162,7 @@ app.get('/', async (req, res) => {
     const listingsPerMonth = fs.readFileSync('src/sql/listings_per_month.sql').toString();
     const listingsSql = createTableListingSQL(listingsPerMonth, req.query);
     const tableDataResult = await pool.query(listingsSql);
+
     if(process.env.LOG === 'true') {
       console.log('tableDataResult =====> ', tableDataResult?.rows?.slice(0, 1));
     }
